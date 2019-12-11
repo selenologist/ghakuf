@@ -500,11 +500,14 @@ impl MidiEventBuilder {
                 pressure: self.data[0],
             },
             0xe0 => {
-                let lsb = self.data[0] as u16;
-                let msb = (self.data[1] as u16) << 8;
+                // combine 7-bit LSB and MSB to make a 14-bit word
+                let lsb =  (self.data[0] & 0x7F) as u16;
+                let msb = ((self.data[1] & 0x7F) as u16) << 7;
+                // subtract 8192 to shift to correct [-8192, 8191] range
+                let data = (msb | lsb) as i16 - 8192;
                 MidiEvent::PitchBendChange {
                     ch: self.status & 0x0f,
-                    data: (msb & lsb) as i16 - 8192,
+                    data,
                 }
             }
             _ => MidiEvent::Unknown {
